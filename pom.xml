@@ -31,5 +31,8 @@
         <version.kaitai-struct>0.10</version.kaitai-struct>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
-
+    <modules>
+        <module>core</module>
+        <module>unsquashfs</module>
+    </modules>
 </project>

@@ -221,3 +221,6 @@ buildNumber.properties
 .classpath
 
 # End of https://www.toptal.com/developers/gitignore/api/java,maven,eclipse,intellij+all,macos
+
+# exclude test_data, generate with ./generate_test_data.sh
+/test_data
