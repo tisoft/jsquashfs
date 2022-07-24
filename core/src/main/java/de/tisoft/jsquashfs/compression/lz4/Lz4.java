@@ -12,7 +12,7 @@ public class Lz4 implements Decompressor {
     @Override
     public byte[] uncompress(byte[] rawData, int maxSize, boolean padded) {
             final byte[] dest = new byte[maxSize];
-            LZ4Factory.fastestJavaInstance().fastDecompressor().decompress(rawData, dest);
+            LZ4Factory.safeInstance().safeDecompressor().decompress(rawData, dest);
 
             return dest;
     }
