@@ -6,12 +6,14 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.ginsberg.junit.exit.ExpectSystemExit;
+import com.ginsberg.junit.exit.ExpectSystemExitWithStatus;
 import de.tisoft.jsquashfs.parser.Squashfs;
-import io.kaitai.struct.ByteBufferKaitaiStream;
 import io.kaitai.struct.RandomAccessFileKaitaiStream;
 import org.junit.jupiter.api.Test;
 
-class SquashFSTest {
+@ExpectSystemExitWithStatus(0)
+class UnsquashfsTest {
 
     public File targetDir() {
         String relPath = getClass().getProtectionDomain().getCodeSource().getLocation().getFile();
@@ -50,14 +52,8 @@ class SquashFSTest {
     }
 
     private void test(String name) throws IOException {
-        Squashfs squashfs = new Squashfs(new RandomAccessFileKaitaiStream(new File(targetDir(), name).getAbsolutePath()));
+        Unsquashfs.main(new String[]{new File(targetDir(), name).getAbsolutePath()});
 
-
-        Map<Long, Squashfs.InodeHeader> inodes = squashfs.inodeTable().inodes().inodeHeader().stream().collect(Collectors.toMap(Squashfs.InodeHeader::inodeNumber, Function.identity()));
-
-        Squashfs.InodeHeader rootInode = squashfs.superblock().rootInodeRef().inodeTable().inodeHeader();
-
-        Main.recurse(inodes, rootInode, "");
 
    //     Assertions.assertThat(new File()).ishasSameContentAs();
     }

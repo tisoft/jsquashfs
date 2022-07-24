@@ -13,8 +13,8 @@ import picocli.CommandLine;
 
 // This is a console application, so using System.out is fine
 @SuppressWarnings("java:S106")
-@CommandLine.Command(name = "ASCIIArt", version = "ASCIIArt 1.0", sortOptions = false)
-public class Main implements Runnable{
+@CommandLine.Command(name = "unsquashfs", sortOptions = false)
+public class Unsquashfs implements Runnable{
 
     @CommandLine.Option(names = {"${picocli.version.name.0:--v}", "${picocli.version.name.1:---version}"}, versionHelp = true, descriptionKey = "mixinStandardHelpOptions.version",
             description = "Print version information and exit.")
@@ -36,9 +36,8 @@ public class Main implements Runnable{
             description = "Show this help message and exit.")
     private boolean helpRequested;
 
-    public static void main(String[] args) throws IOException {
-
-        int exitCode = new CommandLine(new Main()).execute(args);
+    public static void main(String[] args) {
+        int exitCode = new CommandLine(new Unsquashfs()).execute(args);
         System.exit(exitCode);
     }
 
