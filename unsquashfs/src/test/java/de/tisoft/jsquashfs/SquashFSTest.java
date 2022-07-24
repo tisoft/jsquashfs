@@ -13,10 +13,15 @@ import org.junit.jupiter.api.Test;
 
 class SquashFSTest {
 
-    public File targetDir(){
+    public File targetDir() {
         String relPath = getClass().getProtectionDomain().getCodeSource().getLocation().getFile();
-        File targetDir = new File(relPath+"../../../test_data");
+        File targetDir = new File(relPath + "../../../test_data");
         return targetDir;
+    }
+
+    @Test
+    void testGzip() throws IOException {
+        test("sq.img.gzip");
     }
 
     @Test

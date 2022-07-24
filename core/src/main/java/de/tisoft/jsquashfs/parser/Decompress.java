@@ -1,5 +1,6 @@
 package de.tisoft.jsquashfs.parser;
 
+import de.tisoft.jsquashfs.compression.gzip.Gz;
 import de.tisoft.jsquashfs.compression.lzo.LzoAvailabilityCheck;
 import de.tisoft.jsquashfs.compression.xz.Xz;
 import io.kaitai.struct.CustomDecoder;
@@ -27,6 +28,9 @@ public class Decompress implements CustomDecoder {
         }
         if (compressed) {
             switch (compressor) {
+                case ZLIB: {
+                    return new Gz().uncompress(rawData, maxSize, padded);
+                }
                 case LZO: {
                     if (LzoAvailabilityCheck.isLzoAvailable()) {
                         return LzoAvailabilityCheck.getLzoDecompressor().uncompress(rawData, maxSize, padded);
