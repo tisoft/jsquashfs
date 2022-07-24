@@ -4,6 +4,7 @@ import de.tisoft.jsquashfs.compression.gzip.Gz;
 import de.tisoft.jsquashfs.compression.lz4.Lz4;
 import de.tisoft.jsquashfs.compression.lzo.LzoAvailabilityCheck;
 import de.tisoft.jsquashfs.compression.xz.Xz;
+import de.tisoft.jsquashfs.compression.zstd.Zstd;
 import io.kaitai.struct.CustomDecoder;
 
 public class Decompress implements CustomDecoder {
@@ -44,6 +45,9 @@ public class Decompress implements CustomDecoder {
                 }
                 case XZ: {
                     return new Xz().uncompress(rawData, maxSize, padded);
+                }
+                case ZSTD: {
+                    return new Zstd().uncompress(rawData, maxSize, padded);
                 }
                 default:
                     throw new IllegalArgumentException("Unsupported compression: " + compressor);

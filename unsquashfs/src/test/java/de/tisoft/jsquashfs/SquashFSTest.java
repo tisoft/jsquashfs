@@ -34,6 +34,11 @@ class SquashFSTest {
         test("sq.img.xz");
     }
 
+    @Test
+    void testZstd() throws IOException {
+        test("sq.img.zstd");
+    }
+
     private void test(String name) throws IOException {
         Squashfs squashfs = new Squashfs(new RandomAccessFileKaitaiStream(new File(targetDir(), name).getAbsolutePath()));
 
