@@ -2,6 +2,7 @@ package de.tisoft.jsquashfs.parser;
 
 import de.tisoft.jsquashfs.compression.gzip.Gz;
 import de.tisoft.jsquashfs.compression.lz4.Lz4;
+import de.tisoft.jsquashfs.compression.lzma.Lzma;
 import de.tisoft.jsquashfs.compression.lzo.LzoAvailabilityCheck;
 import de.tisoft.jsquashfs.compression.xz.Xz;
 import de.tisoft.jsquashfs.compression.zstd.Zstd;
@@ -35,6 +36,9 @@ public class Decompress implements CustomDecoder {
                 }
                 case LZ4: {
                     return new Lz4().uncompress(rawData, maxSize, padded);
+                }
+                case LZMA: {
+                    return new Lzma().uncompress(rawData, maxSize, padded);
                 }
                 case LZO: {
                     if (LzoAvailabilityCheck.isLzoAvailable()) {

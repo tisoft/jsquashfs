@@ -25,6 +25,11 @@ class SquashFSTest {
     }
 
     @Test
+    void testLzma() throws IOException {
+        test("sq.img.lzma");
+    }
+
+    @Test
     void testLzo() throws IOException {
         test("sq.img.lzo");
     }
