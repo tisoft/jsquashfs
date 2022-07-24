@@ -95,6 +95,11 @@
             <version>1.9</version>
         </dependency>
         <dependency>
+            <groupId>org.lz4</groupId>
+            <artifactId>lz4-pure-java</artifactId>
+            <version>1.8.0</version>
+        </dependency>
+        <dependency>
             <groupId>org.anarres.lzo</groupId>
             <artifactId>lzo-core</artifactId>
             <version>1.0.6</version>
