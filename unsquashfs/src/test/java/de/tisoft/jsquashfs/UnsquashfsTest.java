@@ -22,8 +22,7 @@ class UnsquashfsTest {
 
     public File targetDir() {
         String relPath = getClass().getProtectionDomain().getCodeSource().getLocation().getFile();
-        File targetDir = new File(relPath + "../../../test_data");
-        return targetDir;
+        return new File(relPath + "../../../test_data");
     }
 
     @Test
@@ -62,7 +61,7 @@ class UnsquashfsTest {
         assertDirectory(new File(targetDir(), "data").toPath(), directory);
     }
 
-    private void assertDirectory(Path source, Path dest) {
+    private void assertDirectory(Path source, Path dest) throws IOException {
         System.out.println("Checking " + dest);
         File sourceFile = source.toFile();
         File destFile = dest.toFile();
@@ -73,7 +72,7 @@ class UnsquashfsTest {
                 assertDirectory(new File(sourceFile, s).toPath(), new File(destFile, s).toPath());
             }
         } else if (Files.isRegularFile(source)) {
-            assertThat(dest).isRegularFile();
+            assertThat(dest).isRegularFile().hasSize(Files.size(source));
             if (!Arrays.equals(digest(source), digest(dest))) {
                 assertThat(dest).hasSameBinaryContentAs(source);
             }
@@ -82,7 +81,7 @@ class UnsquashfsTest {
         }
     }
 
-    private static byte[] digest(Path path) {
+    private static byte[] digest(Path path) throws IOException {
         try (FileInputStream fis = new FileInputStream(path.toFile())) {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
 
@@ -94,10 +93,8 @@ class UnsquashfsTest {
             }
 
             return md.digest();
-        } catch (IOException | NoSuchAlgorithmException e) {
-            fail("Can't calculate digest for " + path, e);
-            // never reached
-            throw new RuntimeException(e);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IOException(e);
         }
     }
 }
