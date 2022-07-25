@@ -54,6 +54,13 @@
               <indentSchemaLocation>true</indentSchemaLocation>
             </sortPom>
           </pom>
+          <java>
+            <importOrder></importOrder>
+
+            <removeUnusedImports></removeUnusedImports>
+
+            <googleJavaFormat></googleJavaFormat>
+          </java>
         </configuration>
       </plugin>
     </plugins>
