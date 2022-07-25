@@ -85,6 +85,10 @@
           <transformers>
             <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
               <mainClass>de.tisoft.jsquashfs.Unsquashfs</mainClass>
+              <manifestEntries>
+                <Implementation-Version>${project.version}</Implementation-Version>
+                <Implementation-Build-Date>${project.build.outputTimestamp}</Implementation-Build-Date>
+              </manifestEntries>
             </transformer>
           </transformers>
         </configuration>
