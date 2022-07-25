@@ -117,6 +117,26 @@ public class Unsquashfs implements Runnable{
             }
             Files.write(dest.toPath(), data);
             clearMemory(file, "blocks", "_raw_blocks", "fragment");
+        } else if (inodeHeader.type() == Squashfs.InodeType.EXTENDED_FILE) {
+            Squashfs.InodeHeaderExtendedFile file = (Squashfs.InodeHeaderExtendedFile) inodeHeader.header();
+            System.out.println(dest + " size: " + file.fileSize());
+            byte[] data = new byte[(int) file.fileSize()];
+            int offset = 0;
+            for (Squashfs.DataBlock block : file.blocks()) {
+                //last block might be not fully used, we may need to cap the length
+                final int length = Math.min(block.data().data().length, (int) file.fileSize() - offset);
+                System.arraycopy(block.data().data(), 0, data, offset, length);
+                offset += length;
+            }
+            if (file.fragIndex() != 0xFFFFFFFFL) {
+                System.arraycopy(file.fragment().block().data().data(), (int) file.blockOffset(), data, offset, data
+                        .length - offset);
+                System.out.println(dest + " fragment: " + offset);
+            } else {
+                System.out.println(dest + " finished: " + offset);
+            }
+            Files.write(dest.toPath(), data);
+            clearMemory(file, "blocks", "_raw_blocks", "fragment");
         } else {
             throw new IOException("Unsupported inode type " + inodeHeader.type());
         }

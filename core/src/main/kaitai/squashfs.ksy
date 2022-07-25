@@ -333,6 +333,7 @@ types:
             'inode_type::basic_directory': inode_header_basic_directory
             'inode_type::extended_directory': inode_header_extended_directory
             'inode_type::basic_file': inode_header_basic_file
+            'inode_type::extended_file': inode_header_extended_file
   inode_header_basic_directory:
     instances:
       directory_table:
@@ -412,6 +413,39 @@ types:
       - id: block_offset
         type: u4
       - id: file_size
+        type: u4
+      - id: block_sizes
+        type: u4
+        repeat: expr
+        doc: |
+          A list of block sizes. If this file ends in a fragment, the size of this list is the number of full data
+          blocks needed to store file_size bytes. If this file does not have a fragment, the size of the list is the 
+          number of blocks needed to store file_size bytes, rounded up.
+        repeat-expr: "file_size / _root.superblock.block_size + (frag_index==0xFFFFFFFF and (file_size.as<f4> / _root.superblock.block_size.as<f4>) > file_size / _root.superblock.block_size ? 1 : 0)"
+      - id: blocks
+        size: 0
+        type: data_block(_index==0?blocks_start:blocks[_index-1].start+blocks[_index-1].len_data, block_sizes[_index], _index!=block_sizes.size-1)
+        repeat: expr
+        repeat-expr: block_sizes.size
+  inode_header_extended_file:
+    instances:
+      fragment:
+        value: _root.fragments.fragments[frag_index]
+        if: frag_index!=0xFFFFFFFF
+    seq:
+      - id: blocks_start
+        type: u8
+      - id: file_size
+        type: u8
+      - id: sparse
+        type: u8
+      - id: hardlink_count
+        type: u4
+      - id: frag_index
+        type: u4
+      - id: block_offset
+        type: u4
+      - id: xattr_idx
         type: u4
       - id: block_sizes
         type: u4

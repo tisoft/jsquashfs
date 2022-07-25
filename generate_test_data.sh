@@ -1,5 +1,8 @@
 #!/bin/bash
 
+set -euo pipefail
+trap "exit" INT
+
 # Based on https://fedoraproject.org/wiki/QA:Testcase_squashfs-tools_compression
 
 # Define block sizes
@@ -61,6 +64,14 @@ else
     done
   done
 fi
+
+# create file with xattrs
+touch ${datadir}/file-xattr
+xattr -w user.test test ${datadir}/file-xattr
+
+# create directory with xattrs
+mkdir ${datadir}/dir-xattr
+xattr -w user.test test ${datadir}/dir-xattr
 
 # create images with default options for all compression formats
 for comp in ${ucomp[*]}; do
