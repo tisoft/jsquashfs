@@ -15,14 +15,17 @@ import java.util.function.Function;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
+import picocli.AutoComplete;
 import picocli.CommandLine;
 
 // This is a console application, so using System.out is fine
 @SuppressWarnings("java:S106")
 @CommandLine.Command(
-    name = "unsquashfs",
+    name = "junsquashfs",
     sortOptions = false,
-    versionProvider = Unsquashfs.Version.class)
+    versionProvider = Unsquashfs.Version.class,
+    subcommands = AutoComplete.GenerateCompletion.class,
+    synopsisSubcommandLabel = "")
 public class Unsquashfs implements Runnable {
 
   static class Version implements CommandLine.IVersionProvider {
@@ -100,19 +103,22 @@ public class Unsquashfs implements Runnable {
       names = {"-d", "-dest"},
       paramLabel = "pathname",
       arity = "1",
-      description = "extract to <pathname>, default \"squashfs-root\"",
+      description = "extract to <pathname>, default \"${DEFAULT-VALUE}\"",
       defaultValue = "squashfs-root")
   private String dest;
 
   @CommandLine.Option(
-      names = {"${picocli.help.name.0:--h}", "${picocli.help.name.1:---help}"},
+      names = {"${picocli.help.name.0:--h}", "${picocli.help.name.1:--help}"},
       usageHelp = true,
       descriptionKey = "mixinStandardHelpOptions.help",
       description = "Show this help message and exit.")
   private boolean helpRequested;
 
   public static void main(String[] args) {
-    int exitCode = new CommandLine(new Unsquashfs()).execute(args);
+    CommandLine cmd = new CommandLine(new Unsquashfs());
+    CommandLine gen = cmd.getSubcommands().get("generate-completion");
+    gen.getCommandSpec().usageMessage().hidden(true);
+    int exitCode = cmd.execute(args);
     System.exit(exitCode);
   }
 
