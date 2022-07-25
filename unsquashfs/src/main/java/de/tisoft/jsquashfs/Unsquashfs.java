@@ -105,7 +105,7 @@ public class Unsquashfs implements Runnable {
       arity = "1",
       description = "extract to <pathname>, default \"${DEFAULT-VALUE}\"",
       defaultValue = "squashfs-root")
-  private String dest;
+  private File dest;
 
   @CommandLine.Option(
       names = {"${picocli.help.name.0:--h}", "${picocli.help.name.1:--help}"},
@@ -136,7 +136,7 @@ public class Unsquashfs implements Runnable {
       Squashfs.InodeHeader rootInode =
           squashfs.superblock().rootInodeRef().inodeTable().inodeHeader();
 
-      recurse(inodes, rootInode, new File(dest));
+      recurse(inodes, rootInode, dest);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
