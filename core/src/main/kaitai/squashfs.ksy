@@ -220,13 +220,13 @@ types:
         repeat: eos
   metablock_reference_list:
     params:
-      - id: count
+      - id: num_metablock_reference
         type: u8
     seq:
       - id: metablock_reference
         type: metablock_reference(_index)
         repeat: expr
-        repeat-expr: count
+        repeat-expr: num_metablock_reference
       - id: data
         # we want to concatenate the data of all metablocks, so we fake a 0-sized entry here. the decode method will be called with an empty array, but the constructor has the needed netablocks
         size: 0
@@ -248,13 +248,13 @@ types:
     instances:
       compression:
         value: (compression_and_len&0x8000)==0
-      size:
+      len_data:
         value: compression_and_len&0x7FFF
     seq:
       - id: compression_and_len
         type: u2
       - id: data
-        size: size
+        size: len_data
         type: uncompressed_data(compression, 8192, false)
   uncompressed_data:
     params:
@@ -377,7 +377,7 @@ types:
         type: u4
       - id: parent_inode_number
         type: u4
-      - id: index_count
+      - id: num_index
         type: u2
       - id: block_offset
         type: u2
@@ -386,7 +386,7 @@ types:
       - id: index
         type: directory_index
         repeat: expr
-        repeat-expr: index_count
+        repeat-expr: num_index
   directory_index:
     seq:
       - id: index
@@ -423,7 +423,7 @@ types:
         repeat-expr: "file_size / _root.superblock.block_size + (frag_index==0xFFFFFFFF and (file_size.as<f4> / _root.superblock.block_size.as<f4>) > file_size / _root.superblock.block_size ? 1 : 0)"
       - id: blocks
         size: 0
-        type: data_block(_index==0?blocks_start:blocks[_index-1].start+blocks[_index-1].size, block_sizes[_index], _index!=block_sizes.size-1)
+        type: data_block(_index==0?blocks_start:blocks[_index-1].start+blocks[_index-1].len_data, block_sizes[_index], _index!=block_sizes.size-1)
         repeat: expr
         repeat-expr: block_sizes.size
   data_block:
@@ -437,12 +437,12 @@ types:
     instances:
       compression:
         value: (compression_and_len&0x1000000)==0
-      size:
+      len_data:
         value: compression_and_len&0xFFFFFF
       data:
         io: _root._io
         pos: start
-        size: size
+        size: len_data
         type: uncompressed_data(compression, _root.superblock.block_size, padded)
   fragments:
     seq:
