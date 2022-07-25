@@ -108,6 +108,44 @@ public class Unsquashfs implements Runnable {
   private File dest;
 
   @CommandLine.Option(
+      names = {"-i", "-info"},
+      description = "print files as they are extracted")
+  private boolean info;
+
+  @CommandLine.Option(
+      names = {"-li", "-linfo"},
+      description = "print files as they are extracted with file attributes (like ls -l output)")
+  private boolean infoDetail;
+
+  @CommandLine.Option(
+      names = {"-l", "-ls"},
+      description = "list filesystem, but don't extract files")
+  private boolean list;
+
+  @CommandLine.Option(
+      names = {"-ll", "-lls"},
+      description =
+          "list filesystem with file attributes (like ls -l output), but don't extract files")
+  private boolean listDetail;
+
+  @CommandLine.Option(
+      names = {"-lln", "-llnumeric"},
+      description = "same as -lls but with numeric uids and gids")
+  private boolean listNumeric;
+
+  @CommandLine.Option(
+      names = {"-lc"},
+      description =
+          "list filesystem concisely, displaying only files and empty directories. Don't extract files")
+  private boolean listConcise;
+
+  @CommandLine.Option(
+      names = {"-llc"},
+      description =
+          "list filesystem concisely with file attributes, displaying only files and empty directories. Don't extract files")
+  private boolean listConciseDetail;
+
+  @CommandLine.Option(
       names = {"${picocli.help.name.0:--h}", "${picocli.help.name.1:--help}"},
       usageHelp = true,
       descriptionKey = "mixinStandardHelpOptions.help",
@@ -142,10 +180,30 @@ public class Unsquashfs implements Runnable {
     }
   }
 
-  public static void recurse(
+  private void printFileName(Squashfs.InodeHeader header, File file) {
+    if (list || info || (listConcise && isFileOrEmpty(header))) {
+      System.out.println(file.toPath());
+    }
+  }
+
+  private boolean isFileOrEmpty(Squashfs.InodeHeader inodeHeader) {
+    if (inodeHeader.type() == Squashfs.InodeType.BASIC_DIRECTORY) {
+      Squashfs.InodeHeaderBasicDirectory directory =
+          (Squashfs.InodeHeaderBasicDirectory) inodeHeader.header();
+      return directory.dir().directoryHeader().isEmpty();
+    } else if (inodeHeader.type() == Squashfs.InodeType.EXTENDED_DIRECTORY) {
+      Squashfs.InodeHeaderExtendedDirectory directory =
+          (Squashfs.InodeHeaderExtendedDirectory) inodeHeader.header();
+      return directory.dir().directoryHeader().isEmpty();
+    } else {
+      return true;
+    }
+  }
+
+  private void recurse(
       Map<Long, Squashfs.InodeHeader> inodes, Squashfs.InodeHeader inodeHeader, File dest)
       throws IOException {
-    System.out.println(dest + " " + inodeHeader.inodeNumber() + " " + inodeHeader.type());
+    printFileName(inodeHeader, dest);
     if (inodeHeader.type() == Squashfs.InodeType.BASIC_DIRECTORY) {
       if (!dest.isDirectory() && !dest.mkdir()) {
         throw new IOException("Could not create directory " + dest);
@@ -160,7 +218,6 @@ public class Unsquashfs implements Runnable {
               aConsumerThatUnsafelyThrowsUnchecked(
                   directoryEntry -> {
                     File dir = new File(dest, directoryEntry.name());
-                    System.out.println(dir);
                     recurse(
                         inodes,
                         inodes.get(
@@ -183,7 +240,6 @@ public class Unsquashfs implements Runnable {
               aConsumerThatUnsafelyThrowsUnchecked(
                   directoryEntry -> {
                     File dir = new File(dest, directoryEntry.name());
-                    System.out.println(dir);
                     recurse(
                         inodes,
                         inodes.get(
@@ -194,7 +250,6 @@ public class Unsquashfs implements Runnable {
       clearMemory(directory, "dir", "_raw_dir", "directoryTable", "_raw_directoryTable");
     } else if (inodeHeader.type() == Squashfs.InodeType.BASIC_FILE) {
       Squashfs.InodeHeaderBasicFile file = (Squashfs.InodeHeaderBasicFile) inodeHeader.header();
-      System.out.println(dest + " size: " + file.fileSize());
       byte[] data = new byte[(int) file.fileSize()];
       int offset = 0;
       for (Squashfs.DataBlock block : file.blocks()) {
@@ -210,16 +265,12 @@ public class Unsquashfs implements Runnable {
             data,
             offset,
             data.length - offset);
-        System.out.println(dest + " fragment: " + offset);
-      } else {
-        System.out.println(dest + " finished: " + offset);
       }
       Files.write(dest.toPath(), data);
       clearMemory(file, "blocks", "_raw_blocks", "fragment");
     } else if (inodeHeader.type() == Squashfs.InodeType.EXTENDED_FILE) {
       Squashfs.InodeHeaderExtendedFile file =
           (Squashfs.InodeHeaderExtendedFile) inodeHeader.header();
-      System.out.println(dest + " size: " + file.fileSize());
       byte[] data = new byte[(int) file.fileSize()];
       int offset = 0;
       for (Squashfs.DataBlock block : file.blocks()) {
@@ -235,9 +286,6 @@ public class Unsquashfs implements Runnable {
             data,
             offset,
             data.length - offset);
-        System.out.println(dest + " fragment: " + offset);
-      } else {
-        System.out.println(dest + " finished: " + offset);
       }
       Files.write(dest.toPath(), data);
       clearMemory(file, "blocks", "_raw_blocks", "fragment");
@@ -246,7 +294,7 @@ public class Unsquashfs implements Runnable {
     }
   }
 
-  private static void clearMemory(Object directory, String... fieldNames) {
+  private void clearMemory(Object directory, String... fieldNames) {
     // claim back memory, currently only working with reflection
     for (String fieldName : fieldNames) {
       try {
