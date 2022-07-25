@@ -23,6 +23,9 @@ datadir=${testdir}/data
 # set compression types to test
 ucomp=(gzip lzo lzma xz lz4 zstd)
 
+# set options to test
+uopts=("-no-fragments" "-always-use-fragments" "-noI -noD -noF -noX" "-comp lz4 -Xhc" "-comp lzo -Xalgorithm lzo1x_1")
+
 # Check if test directory exists and make if not
 [ -d ${testdir} ] || mkdir ${testdir}
 [ -d ${testdir} ] || (echo "Unable to make '${testdir}', aborting (failed)."; exit 1)
@@ -59,12 +62,14 @@ else
   done
 fi
 
-# Run unmounted tests
+# create images with default options for all compression formats
 for comp in ${ucomp[*]}; do
   echo "Building squashfs image using ${comp} compression."
-  if [ "${comp}" == gzip ]; then
-    mksquashfs ${datadir} ${testdir}/sq.img.${comp} || (echo "mksquashfs failed for ${comp} compression."; continue)
-  else
-    mksquashfs ${datadir} ${testdir}/sq.img.${comp} -comp ${comp} || (echo "mksquashfs failed for ${comp} compression."; continue)
-  fi
+  mksquashfs ${datadir} ${testdir}/sq.img.${comp} -comp ${comp} || (echo "mksquashfs failed for ${comp} compression."; continue)
+done
+
+# create images with default compression for all options
+for opts in "${uopts[@]}"; do
+  echo "Building squashfs image using ${opts} option."
+  mksquashfs ${datadir} ${testdir}/sq.img.${opts// /_} ${opts} || (echo "mksquashfs failed for ${opts} option."; continue)
 done

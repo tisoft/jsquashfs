@@ -2,9 +2,12 @@ package de.tisoft.jsquashfs;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -20,43 +23,19 @@ class UnsquashfsTest {
     @TempDir
     private Path directory;
 
-    public File targetDir() {
-        String relPath = getClass().getProtectionDomain().getCodeSource().getLocation().getFile();
+    public static File targetDir() {
+        String relPath = UnsquashfsTest.class.getProtectionDomain().getCodeSource().getLocation().getFile();
         return new File(relPath + "../../../test_data");
     }
 
-    @Test
-    void testGzip() throws Exception {
-        test("sq.img.gzip");
+    private static File[] provideStringsForIsBlank() {
+        return targetDir().listFiles((dir, name) -> name.startsWith("sq.img"));
     }
 
-    @Test
-    void testLz4() throws Exception {
-        test("sq.img.lz4");
-    }
-
-    @Test
-    void testLzma() throws Exception {
-        test("sq.img.lzma");
-    }
-
-    @Test
-    void testLzo() throws Exception {
-        test("sq.img.lzo");
-    }
-
-    @Test
-    void testXz() throws Exception {
-        test("sq.img.xz");
-    }
-
-    @Test
-    void testZstd() throws Exception {
-        test("sq.img.zstd");
-    }
-
-    private void test(String name) throws Exception {
-        int statusCode = catchSystemExit(() -> Unsquashfs.main(new String[]{new File(targetDir(), name).getAbsolutePath(), "-d", directory.toString()}));
+    @ParameterizedTest
+    @MethodSource("provideStringsForIsBlank")
+    void test(File file) throws Exception {
+        int statusCode = catchSystemExit(() -> Unsquashfs.main(new String[]{file.getAbsolutePath(), "-d", directory.toString()}));
         assertThat(statusCode).isZero();
         assertDirectory(new File(targetDir(), "data").toPath(), directory);
     }
