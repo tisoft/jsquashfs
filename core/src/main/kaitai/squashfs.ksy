@@ -46,7 +46,8 @@ instances:
   id_table:
     io: _root._io
     pos: superblock.id_table_start
-    type: metablock_reference_list((superblock.bytes_used-superblock.id_table_start)/8)
+    # ceil(id_count/2048)
+    type: "metablock_reference_list(((superblock.id_count%2048 >0) ? 1 : 0) + superblock.id_count/2048)"
   xattr_id_table:
     if: superblock.xattr_id_table_start != 0xffff_ffff_ffff_ffff
     io: _root._io
@@ -75,6 +76,9 @@ instances:
   fragments:
     io: _root.fragment_table.data._io
     type: fragments
+  uid_gid_entries:
+    io: _root.id_table.data._io
+    type: uid_gid_entries
 types:
   flags:
     seq:
@@ -495,3 +499,13 @@ types:
       - id: block
         size: 0
         type: data_block(start, compression_and_len, false)
+  uid_gid_entries:
+    seq:
+      - id: uid_gid_entries
+        type: uid_gid_entry
+        repeat: expr
+        repeat-expr: _root.superblock.id_count
+  uid_gid_entry:
+    seq:
+      - id: uid_gid
+        type: u4

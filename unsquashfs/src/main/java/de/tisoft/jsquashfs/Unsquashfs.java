@@ -8,13 +8,19 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
+import jnr.posix.Group;
+import jnr.posix.POSIXFactory;
+import jnr.posix.Passwd;
 import picocli.AutoComplete;
 import picocli.CommandLine;
 
@@ -183,7 +189,138 @@ public class Unsquashfs implements Runnable {
   private void printFileName(Squashfs.InodeHeader header, File file) {
     if (list || info || (listConcise && isFileOrEmpty(header))) {
       System.out.println(file.toPath());
+    } else if (listDetail
+        || infoDetail
+        || listNumeric
+        || (listConciseDetail && isFileOrEmpty(header))) {
+      String uid_gid;
+      long uid = header._root().uidGidEntries().uidGidEntries().get(header.uid()).uidGid();
+      long gid = header._root().uidGidEntries().uidGidEntries().get(header.gid()).uidGid();
+      if (listNumeric) {
+        uid_gid = uid + "/" + gid;
+      } else {
+        uid_gid =
+            Optional.ofNullable(POSIXFactory.getNativePOSIX().getpwuid((int) uid))
+                    .map(Passwd::getLoginName)
+                    .orElse(String.valueOf(uid))
+                + "/"
+                + Optional.ofNullable(POSIXFactory.getNativePOSIX().getgrgid((int) gid))
+                    .map(Group::getName)
+                    .orElse(String.valueOf(gid));
+      }
+      System.out.println(
+          getPermissionString(header)
+              + " "
+              + uid_gid
+              + " "
+              + String.format("%" + Math.max(1, 26 - uid_gid.length()) + "s", getSize(header))
+              + " "
+              + new SimpleDateFormat("yyyy-MM-dd hh:mm").format(new Date(header.mtime() * 1000L))
+              + " "
+              + file.toPath());
     }
+  }
+
+  private long getSize(Squashfs.InodeHeader header) {
+    switch (header.type()) {
+      case BASIC_DIRECTORY:
+        return ((Squashfs.InodeHeaderBasicDirectory) header.header()).fileSize();
+      case EXTENDED_DIRECTORY:
+        return ((Squashfs.InodeHeaderExtendedDirectory) header.header()).fileSize();
+      case BASIC_FILE:
+        return ((Squashfs.InodeHeaderBasicFile) header.header()).fileSize();
+      case EXTENDED_FILE:
+        return ((Squashfs.InodeHeaderExtendedFile) header.header()).fileSize();
+      default:
+        throw new IllegalArgumentException("Unsupported type: " + header.type());
+    }
+  }
+
+  private static final int S_IRUSR = 0000400; /* R for owner */
+  private static final int S_IWUSR = 0000200; /* W for owner */
+  private static final int S_IXUSR = 0000100; /* X for owner */
+
+  private static final int S_IRGRP = 0000040; /* R for group */
+  private static final int S_IWGRP = 0000020; /* W for group */
+  private static final int S_IXGRP = 0000010; /* X for group */
+
+  private static final int S_IROTH = 0000004; /* R for other */
+  private static final int S_IWOTH = 0000002; /* W for other */
+  private static final int S_IXOTH = 0000001; /* X for other */
+
+  private static final int S_ISUID = 0004000; /* set user id on execution */
+  private static final int S_ISGID = 0002000; /* set group id on execution */
+  private static final int S_ISVTX = 0001000; /* save swapped text even after use */
+
+  public String getPermissionString(Squashfs.InodeHeader inodeHeader) {
+    StringBuilder p = new StringBuilder();
+    int perms = inodeHeader.permissions();
+    if (inodeHeader.type() == Squashfs.InodeType.BASIC_DIRECTORY
+        || inodeHeader.type() == Squashfs.InodeType.EXTENDED_DIRECTORY) {
+      p.append("d");
+    } else {
+      p.append("-");
+    }
+    if ((perms & S_IRUSR) > 0) {
+      p.append("r");
+    } else {
+      p.append("-");
+    }
+    if ((perms & S_IWUSR) > 0) {
+      p.append("w");
+    } else {
+      p.append("-");
+    }
+    if ((perms & S_IXUSR) > 0 && (perms & S_ISUID) > 0) {
+      p.append("s");
+    } else if ((perms & S_ISUID) > 0) {
+      p.append("S");
+    } else if ((perms & S_IXUSR) > 0) {
+      p.append("x");
+    } else {
+      p.append("-");
+    }
+
+    if ((perms & S_IRGRP) > 0) {
+      p.append("r");
+    } else {
+      p.append("-");
+    }
+    if ((perms & S_IWGRP) > 0) {
+      p.append("w");
+    } else {
+      p.append("-");
+    }
+    if ((perms & S_IXGRP) > 0 && (perms & S_ISGID) > 0) {
+      p.append("s");
+    } else if ((perms & S_ISGID) > 0) {
+      p.append("S");
+    } else if ((perms & S_IXGRP) > 0) {
+      p.append("x");
+    } else {
+      p.append("-");
+    }
+
+    if ((perms & S_IROTH) > 0) {
+      p.append("r");
+    } else {
+      p.append("-");
+    }
+    if ((perms & S_IWOTH) > 0) {
+      p.append("w");
+    } else {
+      p.append("-");
+    }
+    if ((perms & S_IXOTH) > 0 && (perms & S_ISVTX) > 0) {
+      p.append("t");
+    } else if ((perms & S_ISVTX) > 0) {
+      p.append("T");
+    } else if ((perms & S_IXOTH) > 0) {
+      p.append("x");
+    } else {
+      p.append("-");
+    }
+    return p.toString();
   }
 
   private boolean isFileOrEmpty(Squashfs.InodeHeader inodeHeader) {
