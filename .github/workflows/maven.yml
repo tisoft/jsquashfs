@@ -8,8 +8,12 @@ on:
 
 jobs:
   build:
+    strategy:
+      matrix:
+        # macos-latest is running macos-11, which has a bug in reading 4k blocks from /dev/zero
+        os: [ubuntu-latest, macos-12]
 
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v3
@@ -20,11 +24,16 @@ jobs:
       with:
         path: ~/.m2/repository
         key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-        restore-keys: |
-          ${{ runner.os }}-maven-
-    - name: install xattr
+        restore-keys: ${{ runner.os }}-maven-
+    - name: install linux dependencies
       run: sudo apt-get update && sudo apt-get install -y xattr
+      if: ${{ runner.os == 'Linux' }}
+    - name: install macos dependencies
+      run: brew install squashfs
+      if: ${{ runner.os == 'macOS' }}
     - name: generate test data
       run: ./generate_test_data.sh
     - name: Build with Maven
-      run: ./mvnw -B package --file pom.xml
+      run: |
+        unset JAVA_HOME
+        ./mvnw -B package --file pom.xml
